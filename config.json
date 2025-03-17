@@ -1,0 +1,5 @@
+{
+    "model_name": "deepseek-reasoner",
+    "worker_agent_num": 3,
+    "num_layers": 3
+}

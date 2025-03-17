@@ -1,0 +1,34 @@
+**/*.pyc
+**/*.s
+**/*.o
+**/*.out
+**/*.exe
+**/*.class
+**/*.jar
+**/*.dll
+**/*.dylib
+**/*.so
+
+**/*.log
+**/logs/**
+**/tmp
+**/__pycache__
+**/__pycache__/*
+
+.vscode/**
+.vscode/*
+
+data/output
+data/output/**
+data/output/*
+.env**
+.DS_Store**
+# *.txt
+# *.md
+*.pdf
+*.docx
+*.doc
+*.xls
+*.xlsx
+*.ppt
+*.pptx
