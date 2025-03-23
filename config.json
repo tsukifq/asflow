@@ -1,6 +1,6 @@
 {
     "model_name": "deepseek-reasoner",
     "worker_agent_num": 3,
-    "num_layers": 2,
+    "num_layers": 3,
     "workers_per_layer": [1, 1, 1]
 }

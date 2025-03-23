@@ -93,9 +93,46 @@ class WorkerAgent(RoutedAgent):
     # Search the repository for similar instructions.
     async def search_repository(self, message: WorkerTask) -> List[str]:
         log_debug(f"search_repository worker {self.id}")
-        
-        return []
+        # TODO: Implement the search logic.
+        # # List all the files in the LLVM RISC-V backend
+        # proc = await asyncio.create_subprocess_shell(
+        #     "ls ../llvm-project/llvm/lib/Target/RISCV",
+        #     stdout=asyncio.subprocess.PIPE,
+        #     stderr=asyncio.subprocess.PIPE
+        # )
+        # stdout, stderr = await proc.communicate()
+        # if proc.returncode == 0:
+        #     files = stdout.decode().split("\n")
+        #     log_debug(f"Files in the RISC-V backend: {files}")
+        # else:
+        #     log_debug(f"Error listing files in the RISC-V backend: {stderr.decode()}")
+        #     files = []
 
+        # # Filter for .td files and aggregate their contents with filenames.
+        # td_files = [f for f in files if f.strip().endswith(".td")]
+
+        td_files = ["RISCV.td", "RISCVFeatures.td", "RISCVInstrFormats.td", "RISCVInstrInfo.td"]
+        aggregated = ""
+        for filename in td_files:
+            full_path = f"../llvm-project/llvm/lib/Target/RISCV/{filename}"
+            # Record the filename and content.
+            aggregated += f"--- The following is the content of file {filename} ---\n"
+            proc = await asyncio.create_subprocess_shell(
+                f"cat {full_path}",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await proc.communicate()
+            if proc.returncode == 0:
+                aggregated += stdout.decode() + "\n"
+            else:
+                log_debug(f"Error reading {full_path}: {stderr.decode()}")
+        log_process(f"{'-'*80}\nWorker-{self.id} (Search Results):\n{aggregated}")
+
+
+
+        system_prompt = "You have . Your task is to synthesize these responses into a single, high-quality response. It is crucial to critically evaluate the information provided in these responses, recognizing that some of it may be biased or incorrect. Your response should not simply replicate the given answers but should offer a refined, accurate, and comprehensive reply to the instruction."
+        return [aggregated]
 
 class OrchestratorAgent(RoutedAgent):
     def __init__(
@@ -138,7 +175,9 @@ class OrchestratorAgent(RoutedAgent):
                 log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nReceived results from workers at layer {i}")
             # Second layer: search the repository for similar instructions.
             elif i == 1:
-                worker_task = WorkerTask(task=worker_task.task, task_format=True, few_shots=[], previous_results=[r.result for r in results])
+                worker_task.task_type = "search"
+                results = await asyncio.gather(*[self.send_message(worker_task, worker_id) for worker_id in worker_ids])
+                worker_task.few_shots = [r.result for r in results]
             # Third layer: finding similar instructions in the few-shot examples.
             elif i == 2:
                 worker_task = WorkerTask(task=worker_task.task, task_format=True, few_shots=[], previous_results=[r.result for r in results])
@@ -149,7 +188,17 @@ class OrchestratorAgent(RoutedAgent):
             else:
                 worker_task = WorkerTask(task=worker_task.task, task_format=True, few_shots=[], previous_results=[r.result for r in results])
         log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nPerforming final aggregation")
-        system_prompt = "You have been provided with a set of responses from various open-source models to the latest user query. Your task is to synthesize these responses into a single, high-quality response. It is crucial to critically evaluate the information provided in these responses, recognizing that some of it may be biased or incorrect. Your response should not simply replicate the given answers but should offer a refined, accurate, and comprehensive reply to the instruction. Ensure your response is well-structured, coherent, and adheres to the highest standards of accuracy and reliability.\n\nResponses from models:"
+        # Include aggregated RAG context from search results if available.
+        aggregated_context = ""
+        if worker_task.few_shots:
+            aggregated_context = "\n\nRetrieved Context:\n" + worker_task.few_shots[0]
+        system_prompt = (
+            "You have been provided with a set of responses from various open-source models to the latest user query. "
+            "Your task is to synthesize these responses into a single, high-quality response. It is crucial to critically evaluate "
+            "the information provided in these responses, recognizing that some of it may be biased or incorrect. Your response "
+            "should not simply replicate the given answers but should offer a refined, accurate, and comprehensive reply to the instruction."
+            + aggregated_context + "\n\nResponses from models:"
+        )
         system_prompt += "\n" + "\n\n".join([f"{i+1}. {r}" for i, r in enumerate(worker_task.previous_results)])
         model_result = await self._model_client.create(
             [SystemMessage(content=system_prompt), UserMessage(content=message.task, source="user")]
