@@ -1,16 +1,21 @@
 
-The LW instruction loads a 32-bit value from memory into rd. LH loads a 16-bit value from memory,
-then sign-extends to 32-bits before storing in rd. LHU loads a 16-bit value from memory but then zero
-extends to 32-bits before storing in rd. LB and LBU are defined analogously for 8-bit values. The SW,
-SH, and SB instructions store 32-bit, 16-bit, and 8-bit values from the low bits of register rs2 to
-memory.
+The FENCE instruction is used to order device I/O and memory accesses as viewed by other RISC-V
+harts and external devices or coprocessors. Any combination of device input (I), device output (O),
+memory reads (R), and memory writes (W) may be ordered with respect to any combination of the
+same. Informally, no other RISC-V hart or external device can observe any operation in the successor
+set following a FENCE before any operation in the predecessor set preceding the FENCE. Chapter 17
+provides a precise description of the RISC-V memory consistency model.
 
-Here is the extracted TableGen code for the `LHU` instruction:
-
-```tablegen
 // ------ RISCVInstrInfo.td ------ //
-let IsSignExtendingOpW = 1 in {
-def LHU : Load_ri<0b101, "lhu">, Sched<[WriteLDH, ReadMemBase]>;
+def FENCE : RVInstI<0b000, OPC_MISC_MEM, (outs),
+                    (ins fencearg:$pred, fencearg:$succ),
+                    "fence", "$pred, $succ">, Sched<[]> {
+  bits<4> pred;
+  bits<4> succ;
+
+  let rs1 = 0;
+  let rd = 0;
+  let imm12 = {0b0000,pred,succ};
 }
 
 // ------ RISCVInstrFormats.td ------ //
@@ -38,10 +43,6 @@ class RVInst<dag outs, dag ins, string opcodestr, string argstr,
              list<dag> pattern, InstFormat format>
     : RVInstCommon<outs, ins, opcodestr, argstr, pattern, format> {
   field bits<32> Inst;
-  // SoftFail is a field the disassembler can use to provide a way for
-  // instructions to not match without killing the whole decode process. It is
-  // mainly used for ARM, but Tablegen expects this field to exist or it fails
-  // to build the decode table.
   field bits<32> SoftFail = 0;
   let Size = 4;
 }
@@ -57,7 +58,6 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
 
   let TSFlags{4-0} = format.Value;
 
-  // Defaults
   RISCVVConstraint RVVConstraint = NoConstraint;
   let TSFlags{7-5} = RVVConstraint.Value;
 
@@ -85,33 +85,15 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
   bit UsesMaskPolicy = 0;
   let TSFlags{17} = UsesMaskPolicy;
 
-  // Indicates that the result can be considered sign extended from bit 31. Some
-  // instructions with this flag aren't W instructions, but are either sign
-  // extended from a smaller size, always outputs a small integer, or put zeros
-  // in bits 63:31. Used by the SExtWRemoval pass.
   bit IsSignExtendingOpW = 0;
   let TSFlags{18} = IsSignExtendingOpW;
 
   bit HasRoundModeOp = 0;
   let TSFlags{19} =  HasRoundModeOp;
 
-  // This is only valid when HasRoundModeOp is set to 1. HasRoundModeOp is set
-  // to 1 for vector fixed-point or floating-point intrinsics. This bit is
-  // processed under pass 'RISCVInsertReadWriteCSR' pass to distinguish between
-  // fixed-point / floating-point instructions and emit appropriate read/write
-  // to the correct CSR.
   bit UsesVXRM = 0;
   let TSFlags{20} =  UsesVXRM;
 
-  // Indicates whther these instructions can partially overlap between source
-  // registers and destination registers according to the vector spec.
-  // 0 -> not a vector pseudo
-  // 1 -> default value for vector pseudos. not widening or narrowing.
-  // 2 -> narrowing case
-  // 3 -> widening case
   bits<2> TargetOverlapConstraintType = 0;
   let TSFlags{22-21} = TargetOverlapConstraintType;
 }
-```
-
-This code includes the definition of the `LHU` instruction and its parent classes up the inheritance hierarchy. The `LHU` instruction is defined in the `RISCVInstrInfo.td` file, and it inherits from the `RVInstI` class, which in turn inherits from `RVInstIBase`, `RVInst`, and `RVInstCommon`.

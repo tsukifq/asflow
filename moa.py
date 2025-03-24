@@ -6,12 +6,14 @@ from autogen_core import AgentId, MessageContext, RoutedAgent, SingleThreadedAge
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from logger import log_process, log_debug
+from prompts import pure_system_prompt, instr_formatting_prompt, files_searching_prompt
 
 @dataclass
 class WorkerTask:
     task: str
-    task_type: str
-    few_shots: List[str]
+    type: str
+    shots: List[str]
+    files: List[str]
     previous_results: List[str]
 
 
@@ -42,15 +44,25 @@ class WorkerAgent(RoutedAgent):
     async def handle_task(self, message: WorkerTask, ctx: MessageContext) -> WorkerTaskResult:
         log_debug(f"handle_task worker {self.id}")
         # If the instruction is not formatted, standardize it first.
-        if message.task_type == "format":
+        if message.type == "format":
             formatted = await self.format_instruction(message)
             # Use the formatted task for further processing.
             log_debug(f"Formatted instruction: {formatted}")
             log_process(f"{'-'*80}\nWorker-{self.id}:\n{formatted}")
             return WorkerTaskResult(result=formatted)
-        elif message.task_type == "search":
-            # Search the repository for similar instructions.
-            few_shots = await self.search_repository(message)
+        
+        # Search the repository for relevant files.
+        elif message.type == "search":
+            files = await self.search_repository(message)
+            log_process(f"{'-'*80}\nWorker-{self.id}:\n{files}")
+            return WorkerTaskResult(result=files)
+        
+        # Find similar instructions in the few-shot examples.
+        elif message.type == "shots":
+            shots = await self.find_similar_instructions(message)
+            log_process(f"{'-'*80}\nWorker-{self.id}:\n{shots}")
+            return WorkerTaskResult(result=shots)
+
         else:
             if message.previous_results:
                 system_prompt = "You have been provided with a set of responses from various open-source models regarding the custom LLVM extension instruction. Your task is to synthesize these responses into a high-quality, normalized LLVM tablegen compliant definition. Critically evaluate the provided responses and generate a refined output."
@@ -70,69 +82,48 @@ class WorkerAgent(RoutedAgent):
     async def format_instruction(self, message: WorkerTask) -> str:
         log_debug(f"format_instruction worker {self.id}")
         # Construct a prompt to normalize the custom extended instruction input.
-        system_prompt = "You are a helpful assistant."
-        prompt = (
-            "Please convert the following custom extended instruction input into a standardized instruction format. \n\n"
-            "The instruction should be in the following format: \n"
-            "{"
-            "    name: <name of the instruction>,"
-            "    description: <description of the instruction>,"
-            "    syntax: <syntax of the instruction>,"
-            "    Operation: <operation of the instruction>,"
-            "    arguments: <arguments of the instruction>,"
-            "    encodings: <encodings of the instruction>,"
-            "    examples: <examples of the instruction>"
-            "}"
-            "Input:\n" + message.task
-        )
-        model_result = await self._model_client.create([SystemMessage(content=system_prompt), UserMessage(content=prompt, source="user")])
+        system_prompt = pure_system_prompt
+        user_prompt = instr_formatting_prompt.format(task=message.task)
+        model_result = await self._model_client.create([SystemMessage(content=system_prompt), UserMessage(content=user_prompt, source="user")])
         assert isinstance(model_result.content, str)
         log_process(f"{'-'*80}\nWorker-{self.id} (Formatted Instruction):\n{model_result.content}")
         return model_result.content
 
-    # Search the repository for similar instructions.
-    async def search_repository(self, message: WorkerTask) -> List[str]:
+    # Search the repository for relevant files.
+    async def search_repository(self, message: WorkerTask) -> str:
         log_debug(f"search_repository worker {self.id}")
-        # TODO: Implement the search logic.
-        # # List all the files in the LLVM RISC-V backend
-        # proc = await asyncio.create_subprocess_shell(
-        #     "ls ../llvm-project/llvm/lib/Target/RISCV",
-        #     stdout=asyncio.subprocess.PIPE,
-        #     stderr=asyncio.subprocess.PIPE
-        # )
-        # stdout, stderr = await proc.communicate()
-        # if proc.returncode == 0:
-        #     files = stdout.decode().split("\n")
-        #     log_debug(f"Files in the RISC-V backend: {files}")
-        # else:
-        #     log_debug(f"Error listing files in the RISC-V backend: {stderr.decode()}")
-        #     files = []
 
-        # # Filter for .td files and aggregate their contents with filenames.
-        # td_files = [f for f in files if f.strip().endswith(".td")]
+        # List all the files in the LLVM RISC-V backend
+        proc = await asyncio.create_subprocess_shell(
+            "find ../llvm-project/llvm/lib/Target/RISCV -name '*.td'",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
 
-        td_files = ["RISCV.td", "RISCVFeatures.td", "RISCVInstrFormats.td", "RISCVInstrInfo.td"]
-        aggregated = ""
-        for filename in td_files:
-            full_path = f"../llvm-project/llvm/lib/Target/RISCV/{filename}"
-            # Record the filename and content.
-            aggregated += f"--- The following is the content of file {filename} ---\n"
-            proc = await asyncio.create_subprocess_shell(
-                f"cat {full_path}",
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            stdout, stderr = await proc.communicate()
-            if proc.returncode == 0:
-                aggregated += stdout.decode() + "\n"
-            else:
-                log_debug(f"Error reading {full_path}: {stderr.decode()}")
-        log_process(f"{'-'*80}\nWorker-{self.id} (Search Results):\n{aggregated}")
+        all_td_files = []
 
+        if proc.returncode == 0:
+            all_td_files = [path for path in stdout.decode().strip().split('\n') if path]
+            log_debug(f"Found {len(all_td_files)} TableGen files")
+        else:
+            log_debug(f"Error listing files in the RISC-V backend: {stderr.decode()}")
+            all_td_files = []
 
+        # Construct a prompt to search for relevant files.
+        system_prompt = pure_system_prompt
+        user_prompt = files_searching_prompt.format(files="\n".join(all_td_files), instr=message.task)
+        log_debug(f"Search prompt: {user_prompt}")
+        model_result = await self._model_client.create([SystemMessage(content=system_prompt), UserMessage(content=user_prompt, source="user")])
+        assert isinstance(model_result.content, str)
+        log_process(f"{'-'*80}\nWorker-{self.id} (Search Results):\n{model_result.content}")
+        relevant_files = model_result.content
+        return relevant_files
 
-        system_prompt = "You have . Your task is to synthesize these responses into a single, high-quality response. It is crucial to critically evaluate the information provided in these responses, recognizing that some of it may be biased or incorrect. Your response should not simply replicate the given answers but should offer a refined, accurate, and comprehensive reply to the instruction."
-        return [aggregated]
+    # Find similar instructions in the few-shot examples.
+    async def find_similar_instructions(self, message: WorkerTask) -> str:
+        log_debug(f"find_similar_instructions worker {self.id}")
+
 
 class OrchestratorAgent(RoutedAgent):
     def __init__(
@@ -153,12 +144,13 @@ class OrchestratorAgent(RoutedAgent):
         # Create task for the first layer.
         worker_task = WorkerTask(
             task=message.task,
-            task_type="",
-            few_shots=[],
+            type="",
+            shots=[],
+            files=[],
             previous_results=[]
         )
         # TODO: decide the layers to be active.
-        for i in range(self._num_layers - 1):
+        for i in range(self._num_layers):
             log_debug(f"handle_task layer {i}")
             num_workers = self._workers_per_layer[i]
             log_debug(f"num_workers: {num_workers}")
@@ -167,41 +159,39 @@ class OrchestratorAgent(RoutedAgent):
                 for j in range(num_workers)
             ]
             log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nDispatch to workers at layer {i}")
+
             # First layer: format the instruction.
             if i == 0:
-                worker_task.task_type = "format"
+                worker_task.type = "format"
                 results = await asyncio.gather(*[self.send_message(worker_task, worker_id) for worker_id in worker_ids])
                 worker_task.task = results[0].result
                 log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nReceived results from workers at layer {i}")
-            # Second layer: search the repository for similar instructions.
+
+            # Second layer: search the repository for relevant files.
             elif i == 1:
-                worker_task.task_type = "search"
+                worker_task.type = "search"
                 results = await asyncio.gather(*[self.send_message(worker_task, worker_id) for worker_id in worker_ids])
-                worker_task.few_shots = [r.result for r in results]
+                # Parse the search results into a list of files
+                file_list = results[0].result.strip().split('\n')
+                worker_task.files = [file.strip() for file in file_list if file.strip()]
+                log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nReceived results from workers at layer {i}")
+
             # Third layer: finding similar instructions in the few-shot examples.
             elif i == 2:
-                worker_task = WorkerTask(task=worker_task.task, task_format=True, few_shots=[], previous_results=[r.result for r in results])
+                worker_task.type = "shots"
+                results = await asyncio.gather(*[self.send_message(worker_task, worker_id) for worker_id in worker_ids])
+                worker_task.shots = [r.result for r in results]
+                log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nReceived results from workers at layer {i}")
+
             # Fourth layer: generate the tablegen snippet according to the few-shot examples.
             elif i == 3:
-                worker_task = WorkerTask(task=worker_task.task, task_format=True, few_shots=[], previous_results=[r.result for r in results])
+                worker_task.type = "generate"
+                worker_task = WorkerTask(task=worker_task.task, shots=[], files=[], previous_results=[r.result for r in results])
+
+
             # Fifth layer: generate the tablegen snippet according to the few-shot examples.
             else:
-                worker_task = WorkerTask(task=worker_task.task, task_format=True, few_shots=[], previous_results=[r.result for r in results])
+                worker_task = WorkerTask(task=worker_task.task, shots=[], files=[], previous_results=[r.result for r in results])
         log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nPerforming final aggregation")
-        # Include aggregated RAG context from search results if available.
-        aggregated_context = ""
-        if worker_task.few_shots:
-            aggregated_context = "\n\nRetrieved Context:\n" + worker_task.few_shots[0]
-        system_prompt = (
-            "You have been provided with a set of responses from various open-source models to the latest user query. "
-            "Your task is to synthesize these responses into a single, high-quality response. It is crucial to critically evaluate "
-            "the information provided in these responses, recognizing that some of it may be biased or incorrect. Your response "
-            "should not simply replicate the given answers but should offer a refined, accurate, and comprehensive reply to the instruction."
-            + aggregated_context + "\n\nResponses from models:"
-        )
-        system_prompt += "\n" + "\n\n".join([f"{i+1}. {r}" for i, r in enumerate(worker_task.previous_results)])
-        model_result = await self._model_client.create(
-            [SystemMessage(content=system_prompt), UserMessage(content=message.task, source="user")]
-        )
-        assert isinstance(model_result.content, str)
+        
         return FinalResult(result=model_result.content)

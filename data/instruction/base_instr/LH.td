@@ -1,23 +1,32 @@
 
-The LW instruction loads a 32-bit value from memory into rd. LH loads a 16-bit value from memory,
-then sign-extends to 32-bits before storing in rd. LHU loads a 16-bit value from memory but then zero
-extends to 32-bits before storing in rd. LB and LBU are defined analogously for 8-bit values. The SW,
-SH, and SB instructions store 32-bit, 16-bit, and 8-bit values from the low bits of register rs2 to
-memory.
+Load and store instructions transfer a value between the registers and memory. Loads are encoded in
+the I-type format and stores are S-type. The effective address is obtained by adding register rs1 to the
+sign-extended 12-bit offset. Loads copy a value from memory to register rd. Stores copy the value in
+register rs2 to memory. LH loads a 16-bit value from memory,
+then sign-extends to 32-bits before storing in rd
 
+
+Here is the extracted TableGen code for the `LH` instruction:
+
+```tablegen
 // ------ RISCVInstrInfo.td ------ //
+def LH  : Load_ri<0b001, "lh">, Sched<[WriteLDH, ReadMemBase]>;
+
 let hasSideEffects = 0, mayLoad = 1, mayStore = 0 in {
 class Load_ri<bits<3> funct3, string opcodestr>
     : RVInstI<funct3, OPC_LOAD, (outs GPR:$rd), (ins GPRMem:$rs1, simm12:$imm12),
               opcodestr, "$rd, ${imm12}(${rs1})">;
 }
 
-let IsSignExtendingOpW = 1 in {
-def LW  : Load_ri<0b010, "lw">, Sched<[WriteLDW, ReadMemBase]>;
+// ------ RISCVInstrFormats.td ------ //
+class RVInstI<bits<3> funct3, RISCVOpcode opcode, dag outs, dag ins,
+              string opcodestr, string argstr>
+    : RVInstIBase<funct3, opcode, outs, ins, opcodestr, argstr> {
+  bits<12> imm12;
+
+  let Inst{31-20} = imm12;
 }
 
-
-// ------ RISCVInstrFormats.td ------ //
 class RVInstIBase<bits<3> funct3, RISCVOpcode opcode, dag outs, dag ins,
                   string opcodestr, string argstr>
     : RVInst<outs, ins, opcodestr, argstr, [], InstFormatI> {
@@ -28,14 +37,6 @@ class RVInstIBase<bits<3> funct3, RISCVOpcode opcode, dag outs, dag ins,
   let Inst{14-12} = funct3;
   let Inst{11-7} = rd;
   let Inst{6-0} = opcode.Value;
-}
-
-class RVInstI<bits<3> funct3, RISCVOpcode opcode, dag outs, dag ins,
-              string opcodestr, string argstr>
-    : RVInstIBase<funct3, opcode, outs, ins, opcodestr, argstr> {
-  bits<12> imm12;
-
-  let Inst{31-20} = imm12;
 }
 
 class RVInst<dag outs, dag ins, string opcodestr, string argstr,
@@ -116,3 +117,6 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
   bits<2> TargetOverlapConstraintType = 0;
   let TSFlags{22-21} = TargetOverlapConstraintType;
 }
+```
+
+This code includes the definition of the `LH` instruction, its parent class `Load_ri`, and the inheritance hierarchy up to `RVInstCommon`. The `LH` instruction is defined as a load instruction with a specific `funct3` value (`0b001`) and is scheduled using `WriteLDH` and `ReadMemBase`. The inheritance hierarchy includes `RVInstI`, `RVInstIBase`, `RVInst`, and `RVInstCommon`, which define the structure and behavior of RISC-V instructions.

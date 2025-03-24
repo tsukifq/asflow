@@ -8,7 +8,8 @@ from prompts import tablegen_extraction_prompt
 class Data:
     def __init__(self):
         self.client = Client()
-        self.model_client = self.client.model_client_v3
+        # self.model_client = self.client.model_client_v3
+        self.model_client = self.client.model_client
 
     # invoke the model to collect data and extract instruction implementation data from LLVM RISCV TableGen code
     async def collect_data(self, instr: Instruction):
@@ -35,13 +36,10 @@ class Data:
     
 data = Data()
 instr = Instruction()
-instr.name = "LHU"
+instr.name = "SW"
 instr.description = """
-The LW instruction loads a 32-bit value from memory into rd. LH loads a 16-bit value from memory,
-then sign-extends to 32-bits before storing in rd. LHU loads a 16-bit value from memory but then zero
-extends to 32-bits before storing in rd. LB and LBU are defined analogously for 8-bit values. The SW,
-SH, and SB instructions store 32-bit, 16-bit, and 8-bit values from the low bits of register rs2 to
-memory.
+The SD, SW, SH, and SB instructions store 64-bit, 32-bit, 16-bit, and 8-bit values from the low
+bits of register rs2 to memory respectively.
 """
 response = asyncio.run(data.collect_data(instr))
 with open("./data/instruction/" + instr.name + ".td", "w") as f:

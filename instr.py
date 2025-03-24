@@ -2,6 +2,7 @@ class Instruction:
     def __init__(self):
         self._name = ""
         self._description = ""
+        self.type = ""
 
     @property
     def name(self):
@@ -18,4 +19,12 @@ class Instruction:
     @description.setter
     def description(self, description):
         self._description = description
+
+    @property
+    def type(self):
+        return self._type
+    
+    @type.setter
+    def type(self, type):
+        self._type = type
 

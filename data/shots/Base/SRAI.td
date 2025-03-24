@@ -1,13 +1,13 @@
 // ------ RISCVInstrInfo.td ------ //
 def SRAI : Shift_ri<0b01000, 0b101, "srai">;
 
-let hasSideEffects = 0, mayLoad = 0, mayStore = 0 in
 class Shift_ri<bits<5> imm11_7, bits<3> funct3, string opcodestr>
     : RVInstIShift<imm11_7, funct3, OPC_OP_IMM, (outs GPR:$rd),
                    (ins GPR:$rs1, uimmlog2xlen:$shamt), opcodestr,
                    "$rd, $rs1, $shamt">,
       Sched<[WriteShiftImm, ReadShiftImm]>;
 
+// ------ RISCVInstrFormats.td ------ //
 class RVInstIShift<bits<5> imm11_7, bits<3> funct3, RISCVOpcode opcode,
                    dag outs, dag ins, string opcodestr, string argstr>
     : RVInstIBase<funct3, opcode, outs, ins, opcodestr, argstr> {
@@ -34,10 +34,6 @@ class RVInst<dag outs, dag ins, string opcodestr, string argstr,
              list<dag> pattern, InstFormat format>
     : RVInstCommon<outs, ins, opcodestr, argstr, pattern, format> {
   field bits<32> Inst;
-  // SoftFail is a field the disassembler can use to provide a way for
-  // instructions to not match without killing the whole decode process. It is
-  // mainly used for ARM, but Tablegen expects this field to exist or it fails
-  // to build the decode table.
   field bits<32> SoftFail = 0;
   let Size = 4;
 }
@@ -53,7 +49,6 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
 
   let TSFlags{4-0} = format.Value;
 
-  // Defaults
   RISCVVConstraint RVVConstraint = NoConstraint;
   let TSFlags{7-5} = RVVConstraint.Value;
 
@@ -81,30 +76,15 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
   bit UsesMaskPolicy = 0;
   let TSFlags{17} = UsesMaskPolicy;
 
-  // Indicates that the result can be considered sign extended from bit 31. Some
-  // instructions with this flag aren't W instructions, but are either sign
-  // extended from a smaller size, always outputs a small integer, or put zeros
-  // in bits 63:31. Used by the SExtWRemoval pass.
   bit IsSignExtendingOpW = 0;
   let TSFlags{18} = IsSignExtendingOpW;
 
   bit HasRoundModeOp = 0;
   let TSFlags{19} =  HasRoundModeOp;
 
-  // This is only valid when HasRoundModeOp is set to 1. HasRoundModeOp is set
-  // to 1 for vector fixed-point or floating-point intrinsics. This bit is
-  // processed under pass 'RISCVInsertReadWriteCSR' pass to distinguish between
-  // fixed-point / floating-point instructions and emit appropriate read/write
-  // to the correct CSR.
   bit UsesVXRM = 0;
   let TSFlags{20} =  UsesVXRM;
 
-  // Indicates whther these instructions can partially overlap between source
-  // registers and destination registers according to the vector spec.
-  // 0 -> not a vector pseudo
-  // 1 -> default value for vector pseudos. not widening or narrowing.
-  // 2 -> narrowing case
-  // 3 -> widening case
   bits<2> TargetOverlapConstraintType = 0;
   let TSFlags{22-21} = TargetOverlapConstraintType;
 }

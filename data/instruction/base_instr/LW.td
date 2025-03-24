@@ -1,9 +1,20 @@
-Here is the extracted TableGen code for the `LHU` instruction:
+
+Load and store instructions transfer a value between the registers and memory. Loads are encoded in
+the I-type format and stores are S-type. The effective address is obtained by adding register rs1 to the
+sign-extended 12-bit offset. Loads copy a value from memory to register rd. Stores copy the value in
+register rs2 to memory.The LW instruction loads a 32-bit value from memory into rd.
+
+
+Here is the extracted TableGen code for the `LW` instruction:
 
 ```tablegen
 // ------ RISCVInstrInfo.td ------ //
-let IsSignExtendingOpW = 1 in {
-def LHU : Load_ri<0b101, "lhu">, Sched<[WriteLDH, ReadMemBase]>;
+def LW  : Load_ri<0b010, "lw">, Sched<[WriteLDW, ReadMemBase]>;
+
+let hasSideEffects = 0, mayLoad = 1, mayStore = 0 in {
+class Load_ri<bits<3> funct3, string opcodestr>
+    : RVInstI<funct3, OPC_LOAD, (outs GPR:$rd), (ins GPRMem:$rs1, simm12:$imm12),
+              opcodestr, "$rd, ${imm12}(${rs1})">;
 }
 
 // ------ RISCVInstrFormats.td ------ //
@@ -107,4 +118,4 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
 }
 ```
 
-This code includes the definition of the `LHU` instruction and its parent classes up the inheritance hierarchy. The `LHU` instruction is defined in the `RISCVInstrInfo.td` file, and it inherits from the `RVInstI` class, which in turn inherits from `RVInstIBase`, `RVInst`, and `RVInstCommon`.
+This code includes the definition of the `LW` instruction, its parent class `Load_ri`, and the inheritance hierarchy up to `RVInstCommon`. The `LW` instruction is defined as a load operation with a specific `funct3` value (`0b010`) and is scheduled using `WriteLDW` and `ReadMemBase`. The `Load_ri` class is a template for load instructions with immediate offsets, and it inherits from `RVInstI`, which in turn inherits from `RVInstIBase`, `RVInst`, and finally `RVInstCommon`.

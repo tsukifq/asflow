@@ -2,6 +2,26 @@ pure_system_prompt = """
 You are a helpful assistant. You will follow the user's instructions to complete the task.
 """
 
+instr_formatting_prompt = """
+You are tasked to convert the following custom extended instruction description into a standardized instruction format.
+Please follow the format guidelines below:
+1. The instruction should be in the following format:
+The instruction should be in the following format:
+{{
+    name: <name of the instruction>,
+    description: <description of the instruction>,
+    syntax: <syntax of the instruction>,
+    operation: <operation of the instruction>,
+    arguments: <arguments of the instruction>,
+    encodings: <encodings of the instruction>,
+    classification: <classification of the instruction>,
+    examples: <examples of the instruction>
+}}
+2. Ensure that the instruction is correctly formatted and all the fields are filled.
+3. Pay attention to the classification of the instruction. You only need to tell if it is a base instruction, an extension instruction, or a custom instruction. For extension and custom instructions, specify the extension name.
+{task}
+"""
+            
 tablegen_extraction_prompt = """
 You are tasked with extracting the implementation of the following instruction and all its inheretent classes from the LLVM RISC-V TableGen code.
 Let's do it step by step:
@@ -138,4 +158,23 @@ This is the name and description of the target instruction:
 {instr.description}
 The following is LLVM RISC-V TableGen code:
 {file_content}
+"""
+
+files_searching_prompt = """
+You are provided with a set of TableGen file names from the LLVM RISC-V backend and information about a target RISC-V instruction. 
+Your task is to choose relevant files that contain instruction encoding and formats about the target instruction from the set. 
+Critically evaluate the provided file names and generate a refined output.
+Please observe the principles below:
+1. Only output the names of the relevant files.
+2. Do not include any other information or comments in the output.
+3. Pay attention to the file names and ensure the extracted names are complete and accurate.
+4. Add file RISCVInstrInfo.td and RISCVInstrFormats.td to the output.
+The following is the list of TableGen files:
+{files}
+This is the description of target instruction:
+{instr}
+"""
+
+shots_searching_prompt = """
+
 """

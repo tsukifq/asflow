@@ -1,29 +1,21 @@
-
-Shifts by a constant are encoded as a specialization of the I-type format. The operand to be shifted is in
-rs1, and the shift amount is encoded in the lower 5 bits of the I-immediate field. The right shift type is
-encoded in bit 30. SRAI is an arithmetic right shift (the original sign bit is copied into the vacated upper bits).
-
-Here is the extracted TableGen code for the `SRAI` instruction and its inheritance hierarchy:
-
-```tablegen
 // ------ RISCVInstrInfo.td ------ //
-def SRAI : Shift_ri<0b01000, 0b101, "srai">;
+let IsSignExtendingOpW = 1 in {
+def LHU : Load_ri<0b101, "lhu">, Sched<[WriteLDH, ReadMemBase]>;
+}
 
-let hasSideEffects = 0, mayLoad = 0, mayStore = 0 in
-class Shift_ri<bits<5> imm11_7, bits<3> funct3, string opcodestr>
-    : RVInstIShift<imm11_7, funct3, OPC_OP_IMM, (outs GPR:$rd),
-                   (ins GPR:$rs1, uimmlog2xlen:$shamt), opcodestr,
-                   "$rd, $rs1, $shamt">,
-      Sched<[WriteShiftImm, ReadShiftImm]>;
+let hasSideEffects = 0, mayLoad = 1, mayStore = 0 in {
+    class Load_ri<bits<3> funct3, string opcodestr>
+        : RVInstI<funct3, OPC_LOAD, (outs GPR:$rd), (ins GPRMem:$rs1, simm12:$imm12),
+                  opcodestr, "$rd, ${imm12}(${rs1})">;
+}
 
-class RVInstIShift<bits<5> imm11_7, bits<3> funct3, RISCVOpcode opcode,
-                   dag outs, dag ins, string opcodestr, string argstr>
+// ------ RISCVInstrFormats.td ------ //
+class RVInstI<bits<3> funct3, RISCVOpcode opcode, dag outs, dag ins,
+              string opcodestr, string argstr>
     : RVInstIBase<funct3, opcode, outs, ins, opcodestr, argstr> {
-  bits<6> shamt;
+  bits<12> imm12;
 
-  let Inst{31-27} = imm11_7;
-  let Inst{26} = 0;
-  let Inst{25-20} = shamt;
+  let Inst{31-20} = imm12;
 }
 
 class RVInstIBase<bits<3> funct3, RISCVOpcode opcode, dag outs, dag ins,
@@ -116,6 +108,3 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
   bits<2> TargetOverlapConstraintType = 0;
   let TSFlags{22-21} = TargetOverlapConstraintType;
 }
-```
-
-This code includes the definition of the `SRAI` instruction and its parent classes up the inheritance hierarchy, as requested. The inheritance chain is: `SRAI` -> `Shift_ri` -> `RVInstIShift` -> `RVInstIBase` -> `RVInst` -> `RVInstCommon` -> `Instruction`.

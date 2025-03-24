@@ -1,0 +1,20 @@
+The detailed information of MULA instruction
+MULA——乘累加指令
+语法:
+    mula rd, rs1, rs2
+操作:
+    rd ← rd+ (rs1 * rs2)[63:0]
+执行权限:
+    M mode/S mode/U mode
+异常:
+    非法指令异常
+类型:
+    C910自定义
+指令格式：
+    31-27bits: 00100
+    26-25bits: 00
+    24-20bits: rs2
+    19-15bits: rs1
+    14-12bits: 001
+    11-7bits:  rd
+    6-0bits: 0001011

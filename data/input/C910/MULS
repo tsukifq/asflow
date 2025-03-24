@@ -1,0 +1,21 @@
+The detailed information of MULS instruction
+
+MULS——乘累减指令
+语法:
+    muls rd, rs1, rs2
+操作:
+    rd ← rd- (rs1 * rs2)[63:0]
+执行权限:
+    M mode/S mode/U mode
+异常:
+    非法指令异常
+类型:
+    C910自定义
+指令格式:
+    31-27: 00100
+    26-25: 01
+    24-20: rs2
+    19-15: rs1
+    14-12: 001
+    11-7:  rd
+    6-0: 0001011

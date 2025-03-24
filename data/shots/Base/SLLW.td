@@ -1,18 +1,32 @@
 // ------ RISCVInstrInfo.td ------ //
-let hasSideEffects = 0, mayLoad = 0, mayStore = 0 in {
-let isReMaterializable = 1, isAsCheapAsAMove = 1,
-    IsSignExtendingOpW = 1 in
-def LUI : RVInstU<OPC_LUI, (outs GPR:$rd), (ins uimm20_lui:$imm20),
-                  "lui", "$rd, $imm20">, Sched<[WriteIALU]>;
+def SLLW  : ALUW_rr<0b0000000, 0b001, "sllw">,
+            Sched<[WriteShiftReg32, ReadShiftReg32, ReadShiftReg32]>;
+
+let hasSideEffects = 0, mayLoad = 0, mayStore = 0 in
+class ALUW_rr<bits<7> funct7, bits<3> funct3, string opcodestr,
+              bit Commutable = 0>
+    : RVInstR<funct7, funct3, OPC_OP_32, (outs GPR:$rd),
+              (ins GPR:$rs1, GPR:$rs2), opcodestr, "$rd, $rs1, $rs2"> {
+  let isCommutable = Commutable;
+}
 
 // ------ RISCVInstrFormats.td ------ //
-class RVInstU<RISCVOpcode opcode, dag outs, dag ins, string opcodestr,
-              string argstr>
-    : RVInst<outs, ins, opcodestr, argstr, [], InstFormatU> {
-  bits<20> imm20;
+class RVInstR<bits<7> funct7, bits<3> funct3, RISCVOpcode opcode, dag outs,
+            dag ins, string opcodestr, string argstr>
+    : RVInstRBase<funct3, opcode, outs, ins, opcodestr, argstr> {
+  let Inst{31-25} = funct7;
+}
+
+class RVInstRBase<bits<3> funct3, RISCVOpcode opcode, dag outs,
+                dag ins, string opcodestr, string argstr>
+    : RVInst<outs, ins, opcodestr, argstr, [], InstFormatR> {
+  bits<5> rs2;
+  bits<5> rs1;
   bits<5> rd;
 
-  let Inst{31-12} = imm20;
+  let Inst{24-20} = rs2;
+  let Inst{19-15} = rs1;
+  let Inst{14-12} = funct3;
   let Inst{11-7} = rd;
   let Inst{6-0} = opcode.Value;
 }
@@ -31,7 +45,7 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
 
   dag OutOperandList = outs;
   dag InOperandList = ins;
-  let AsmString = opcodestr # !if(!empty(argstr), "", "\t" # argstr);
+  let AsmString = opcodestr # !if(!empty(argstr), "", "	" # argstr);
   let Pattern = pattern;
 
   let TSFlags{4-0} = format.Value;

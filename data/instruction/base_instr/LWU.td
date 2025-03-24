@@ -1,17 +1,14 @@
 
-The LW instruction loads a 32-bit value from memory into rd. LH loads a 16-bit value from memory,
-then sign-extends to 32-bits before storing in rd. LHU loads a 16-bit value from memory but then zero
-extends to 32-bits before storing in rd. LB and LBU are defined analogously for 8-bit values. The SW,
-SH, and SB instructions store 32-bit, 16-bit, and 8-bit values from the low bits of register rs2 to
-memory.
+The LWU instruction, on the other hand, zero-extends the 32-bit value from
+memory for RV64I
 
 // ------ RISCVInstrInfo.td ------ //
-let IsSignExtendingOpW = 1 in {
-def LB  : Load_ri<0b000, "lb">, Sched<[WriteLDB, ReadMemBase]>;
-def LH  : Load_ri<0b001, "lh">, Sched<[WriteLDH, ReadMemBase]>;
-def LW  : Load_ri<0b010, "lw">, Sched<[WriteLDW, ReadMemBase]>;
-def LBU : Load_ri<0b100, "lbu">, Sched<[WriteLDB, ReadMemBase]>;
-def LHU : Load_ri<0b101, "lhu">, Sched<[WriteLDH, ReadMemBase]>;
+def LWU   : Load_ri<0b110, "lwu">, Sched<[WriteLDW, ReadMemBase]>;
+
+let hasSideEffects = 0, mayLoad = 1, mayStore = 0 in {
+class Load_ri<bits<3> funct3, string opcodestr>
+    : RVInstI<funct3, OPC_LOAD, (outs GPR:$rd), (ins GPRMem:$rs1, simm12:$imm12),
+              opcodestr, "$rd, ${imm12}(${rs1})">;
 }
 
 // ------ RISCVInstrFormats.td ------ //
@@ -39,10 +36,6 @@ class RVInst<dag outs, dag ins, string opcodestr, string argstr,
              list<dag> pattern, InstFormat format>
     : RVInstCommon<outs, ins, opcodestr, argstr, pattern, format> {
   field bits<32> Inst;
-  // SoftFail is a field the disassembler can use to provide a way for
-  // instructions to not match without killing the whole decode process. It is
-  // mainly used for ARM, but Tablegen expects this field to exist or it fails
-  // to build the decode table.
   field bits<32> SoftFail = 0;
   let Size = 4;
 }
@@ -53,12 +46,11 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
 
   dag OutOperandList = outs;
   dag InOperandList = ins;
-  let AsmString = opcodestr # !if(!empty(argstr), "", "\t" # argstr);
+  let AsmString = opcodestr # !if(!empty(argstr), "", "	" # argstr);
   let Pattern = pattern;
 
   let TSFlags{4-0} = format.Value;
 
-  // Defaults
   RISCVVConstraint RVVConstraint = NoConstraint;
   let TSFlags{7-5} = RVVConstraint.Value;
 
@@ -86,30 +78,15 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
   bit UsesMaskPolicy = 0;
   let TSFlags{17} = UsesMaskPolicy;
 
-  // Indicates that the result can be considered sign extended from bit 31. Some
-  // instructions with this flag aren't W instructions, but are either sign
-  // extended from a smaller size, always outputs a small integer, or put zeros
-  // in bits 63:31. Used by the SExtWRemoval pass.
   bit IsSignExtendingOpW = 0;
   let TSFlags{18} = IsSignExtendingOpW;
 
   bit HasRoundModeOp = 0;
   let TSFlags{19} =  HasRoundModeOp;
 
-  // This is only valid when HasRoundModeOp is set to 1. HasRoundModeOp is set
-  // to 1 for vector fixed-point or floating-point intrinsics. This bit is
-  // processed under pass 'RISCVInsertReadWriteCSR' pass to distinguish between
-  // fixed-point / floating-point instructions and emit appropriate read/write
-  // to the correct CSR.
   bit UsesVXRM = 0;
   let TSFlags{20} =  UsesVXRM;
 
-  // Indicates whther these instructions can partially overlap between source
-  // registers and destination registers according to the vector spec.
-  // 0 -> not a vector pseudo
-  // 1 -> default value for vector pseudos. not widening or narrowing.
-  // 2 -> narrowing case
-  // 3 -> widening case
   bits<2> TargetOverlapConstraintType = 0;
   let TSFlags{22-21} = TargetOverlapConstraintType;
 }
