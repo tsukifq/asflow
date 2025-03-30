@@ -6,7 +6,7 @@ from autogen_core import AgentId, MessageContext, RoutedAgent, SingleThreadedAge
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from logger import log_process, log_debug
-from prompts import pure_system_prompt, instr_formatting_prompt, files_searching_prompt
+from prompts import pure_system_prompt, instr_formatting_prompt, files_searching_prompt, shots_searching_prompt, tablegen_generating_prompt
 
 @dataclass
 class WorkerTask:
@@ -56,27 +56,18 @@ class WorkerAgent(RoutedAgent):
             files = await self.search_repository(message)
             log_process(f"{'-'*80}\nWorker-{self.id}:\n{files}")
             return WorkerTaskResult(result=files)
-        
+
         # Find similar instructions in the few-shot examples.
         elif message.type == "shots":
             shots = await self.find_similar_instructions(message)
             log_process(f"{'-'*80}\nWorker-{self.id}:\n{shots}")
             return WorkerTaskResult(result=shots)
 
-        else:
-            if message.previous_results:
-                system_prompt = "You have been provided with a set of responses from various open-source models regarding the custom LLVM extension instruction. Your task is to synthesize these responses into a high-quality, normalized LLVM tablegen compliant definition. Critically evaluate the provided responses and generate a refined output."
-                system_prompt += "\n" + "\n\n".join([f"{i+1}. {r}" for i, r in enumerate(message.previous_results)])
-                model_result = await self._model_client.create(
-                    [SystemMessage(content=system_prompt), UserMessage(content=message.task, source="user")]
-                )
-            else:
-                model_result = await self._model_client.create(
-                    [SystemMessage(content="Format the custom extended instruction into a valid LLVM tablegen snippet."), UserMessage(content=message.task, source="user")]
-                )
-            assert isinstance(model_result.content, str)
-            log_process(f"{'-'*80}\nWorker-{self.id}:\n{model_result.content}")
-            return WorkerTaskResult(result=model_result.content)
+        elif message.type == "generate":
+            # Generate the tablegen snippet according to the few-shot examples.
+            code = await self.gen_tablegen_code(message)
+            log_process(f"{'-'*80}\nWorker-{self.id}:\n{code}")
+            return WorkerTaskResult(result=code)
 
     # Format the instruction.
     async def format_instruction(self, message: WorkerTask) -> str:
@@ -123,6 +114,75 @@ class WorkerAgent(RoutedAgent):
     # Find similar instructions in the few-shot examples.
     async def find_similar_instructions(self, message: WorkerTask) -> str:
         log_debug(f"find_similar_instructions worker {self.id}")
+        # List all the shots in the directory
+        proc = await asyncio.create_subprocess_shell(
+            "ls ./data/shots/Base",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+
+        if proc.returncode == 0:
+            # Split the output into a list of shots according to the space delimiter.
+            all_shots = [path for path in stdout.decode().strip().split('\t') if path]
+            log_debug(f"Found {len(all_shots)} shots")
+        else:
+            log_debug(f"Error listing shots in the directory: {stderr.decode()}")
+            all_shots = []
+        # Construct a prompt to search for relevant files.
+        system_prompt = pure_system_prompt
+        user_prompt = shots_searching_prompt.format(shots="\n".join(all_shots), instr=message.task)
+        log_debug(f"Shots prompt: {user_prompt}")
+        model_result = await self._model_client.create([SystemMessage(content=system_prompt), UserMessage(content=user_prompt, source="user")])
+        assert isinstance(model_result.content, str)
+        log_process(f"{'-'*80}\nWorker-{self.id} (Shots Results):\n{model_result.content}")
+        similar_instructions = model_result.content
+        return similar_instructions
+    
+    # Generate the tablegen snippet according to the few-shot examples.
+    async def gen_tablegen_code(self, message: WorkerTask) -> str:
+        log_debug(f"gen_tablegen_code worker {self.id}")
+        # Construct a prompt to generate the tablegen code.
+        system_prompt = pure_system_prompt
+        # Extract the file content and similar instruction from the message.
+        file_names = message.files
+        # Read the content of all the files.
+        file_paths = " ".join(f"../llvm-project/llvm/lib/Target/RISCV/{name}" for name in file_names)
+        proc = await asyncio.create_subprocess_shell(
+            f"cat {file_paths}",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+
+        if proc.returncode == 0:
+            file_content = stdout.decode()
+            log_debug(f"Found file content: {file_content}")
+        else:
+            log_debug(f"Error reading file content: {stderr.decode()}")
+            file_content = ""
+
+        shot_names = message.shots
+        shots_path = " ".join(f"./data/shots/Base/{name}" for name in shot_names)
+        proc = await asyncio.create_subprocess_shell(
+            f"cat {shots_path}",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+
+        if proc.returncode == 0:
+            similar_instr = stdout.decode()
+            log_debug(f"Found similar instruction: {similar_instr}")
+        else:
+            log_debug(f"Error reading similar instruction: {stderr.decode()}")
+            similar_instr = ""
+            
+        user_prompt = tablegen_generating_prompt.format(instr=message.task, file_content=file_content, similar_instr=similar_instr)
+        model_result = await self._model_client.create([SystemMessage(content=system_prompt), UserMessage(content=user_prompt, source="user")])
+        assert isinstance(model_result.content, str)
+        log_process(f"{'-'*80}\nWorker-{self.id} (TableGen Code):\n{model_result.content}")
+        return model_result.content
 
 
 class OrchestratorAgent(RoutedAgent):
@@ -180,18 +240,16 @@ class OrchestratorAgent(RoutedAgent):
             elif i == 2:
                 worker_task.type = "shots"
                 results = await asyncio.gather(*[self.send_message(worker_task, worker_id) for worker_id in worker_ids])
-                worker_task.shots = [r.result for r in results]
+                worker_task.shots = results[0].result.strip().split('\n')
                 log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nReceived results from workers at layer {i}")
 
             # Fourth layer: generate the tablegen snippet according to the few-shot examples.
             elif i == 3:
                 worker_task.type = "generate"
-                worker_task = WorkerTask(task=worker_task.task, shots=[], files=[], previous_results=[r.result for r in results])
+                results = await asyncio.gather(*[self.send_message(worker_task, worker_id) for worker_id in worker_ids])
+                model_result = results[0]
+                log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nReceived results from workers at layer {i}")
 
-
-            # Fifth layer: generate the tablegen snippet according to the few-shot examples.
-            else:
-                worker_task = WorkerTask(task=worker_task.task, shots=[], files=[], previous_results=[r.result for r in results])
-        log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nPerforming final aggregation")
         
-        return FinalResult(result=model_result.content)
+        log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nPerforming final aggregation")
+        return FinalResult(result=model_result)

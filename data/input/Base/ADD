@@ -1,0 +1,53 @@
+ADD - Add
+
+Description:
+ADD adds the values in registers rs1 and rs2 and writes the result to register rd.
+This instruction is part of the RISC-V Base ISA (RV32I/RV64I).
+
+Syntax:
+add rd, rs1, rs2
+
+Operation:
+rd = rs1 + rs2
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+None (ADD does not cause exceptions)
+
+Instruction format:
+31-25  24-20  19-15  14-12  11-7   6-0
+funct7  rs2    rs1   funct3  rd    opcode
+0000000 XXXXX  XXXXX  000   XXXXX 0110011
+
+Encoding details:
+funct7 = 0000000
+funct3 = 000
+opcode = 0110011 (OP)
+
+instruction type:
+Base
+
+
+def ADD : RVInstR<0b0110011, 0b000, 0b0000000, "add", 
+                  (outs GPR:$rd), 
+                  (ins GPR:$rs1, GPR:$rs2),
+                  "add $rd, $rs1, $rs2"> {
+  let InstType = InstTypeBase;
+  let hasNoExceptions = 1;
+  let mayLoad = 0;
+  let mayStore = 0;
+  let isALU = 1;
+  let isAdd = 1;
+  let Privilege = PrivilegeModesAll;
+}
+
+def ADD : RVInstR<0b0000000, 0b000, OPC_OP, (outs GPR:$rd), (ins GPR:$rs1, GPR:$rs2),
+           "add\t$rd, $rs1, $rs2",
+           [(set GPR:$rd, (add GPR:$rs1, GPR:$rs2))]> {
+  let hasSideEffects = 0;
+  let mayLoad = 0;
+  let mayStore = 0;
+}
+

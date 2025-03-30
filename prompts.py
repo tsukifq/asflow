@@ -176,5 +176,30 @@ This is the description of target instruction:
 """
 
 shots_searching_prompt = """
-
+You are provided with a set of file names. These files contain the implementation of RISC-V instructions and their related classes in the LLVM RISC-V TableGen code.
+Your task is to choose 3 files that containe the implementation of instructions that are similar to the target instruction.
+Please observe the principles below:
+1. Only output the names of the relevant files.
+2. Do not include any other information or comments in the output.
+3. Pay attention to the file names and ensure the extracted names are complete and accurate.
+The following is the list of TableGen files:
+{shots}
+This is the description of target instruction:
+{instr}
 """
+
+tablegen_generating_prompt = """
+You are provided with the description of a custom-defined RISC-V instruction, the current relative TableGen files content, and the TableGen code of similar instructions.
+Your task is to generate the TableGen code for the custom-defined instruction.
+Please observe the principles below:
+1. Only output TableGen code.
+2. Do not include any other information or comments in the output.
+3. Pay attention to the code structure and indentation. Ensure the generated code is complete and accurate.
+The following is the description of the custom-defined instruction:
+{instr}
+The following is the current relative TableGen files content, you should add the generated code to the files:
+{file_content}
+The following is the TableGen code of similar instructions:
+{similar_instr}
+"""
+

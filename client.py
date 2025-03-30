@@ -9,7 +9,7 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 class Client:
     def __init__(self):
         self.model_client = OpenAIChatCompletionClient(
-            model="deepseek-reasoner",
+            model="deepseek-chat",
             base_url="https://api.deepseek.com",
             api_key=DEEPSEEK_API_KEY,
             model_capabilities={
