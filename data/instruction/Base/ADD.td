@@ -1,9 +1,3 @@
-
-ADD performs the addition of rs1 and rs2. SUB performs the subtraction of rs2 from rs1. Overflows are
-ignored and the low XLEN bits of results are written to the destination rd. 
-
-Here is the extracted TableGen code for the `ADD` instruction and its inheritance hierarchy:
-
 ```tablegen
 // ------ RISCVInstrInfo.td ------ //
 def ADD  : ALU_rr<0b0000000, 0b000, "add", Commutable=1>,
@@ -97,5 +91,3 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
   let TSFlags{22-21} = TargetOverlapConstraintType;
 }
 ```
-
-This code includes the definition of the `ADD` instruction and its parent classes up the inheritance hierarchy. The `ADD` instruction is defined in the `ALU_rr` class, which inherits from `RVInstR`, which in turn inherits from `RVInstRBase`, `RVInst`, and finally `RVInstCommon`.

@@ -1,0 +1,29 @@
+AUIPC - Add Upper Immediate to PC
+
+Description:
+AUIPC (Add Upper Immediate to PC) forms a 32-bit offset by placing the 20-bit U-immediate value in the top 20 bits and filling the lowest 12 bits with zeros, adds this offset to the pc, and writes the result to register rd.
+This instruction is part of the RISC-V Base ISA (RV32I/RV64I).
+
+Syntax:
+auipc rd, imm
+
+Operation:
+rd = pc + (imm << 12)
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+None (AUIPC does not cause exceptions)
+
+Instruction format:
+31-12        11-7   6-0
+imm[31:12]    rd    opcode
+XXXXXXXXXXXX XXXXX 0010111
+
+Encoding details:
+imm[31:12] = 20-bit immediate value
+opcode = 0010111 (AUIPC)
+
+instruction type:
+Base

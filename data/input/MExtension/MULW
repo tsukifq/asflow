@@ -1,0 +1,30 @@
+MULW - Multiply Word
+
+Description:
+MULW multiplies the lower 32 bits of registers rs1 and rs2, sign-extends the 32-bit product to XLEN bits, and writes the result to register rd.
+This instruction is part of the RISC-V M Extension (Integer Multiplication and Division) and is only available in RV64.
+
+Syntax:
+mulw rd, rs1, rs2
+
+Operation:
+rd = sext((rs1[31:0] * rs2[31:0])[31:0])
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+None (MULW does not cause exceptions)
+
+Instruction format:
+31-25  24-20  19-15  14-12  11-7   6-0
+funct7  rs2    rs1   funct3  rd    opcode
+0000001 XXXXX  XXXXX  000   XXXXX 0111011
+
+Encoding details:
+funct7 = 0000001
+funct3 = 000
+opcode = 0111011 (OP-32)
+
+instruction type:
+MExtension

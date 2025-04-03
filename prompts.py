@@ -192,7 +192,7 @@ tablegen_generating_prompt = """
 You are provided with the description of a custom-defined RISC-V instruction, the current relative TableGen files content, and the TableGen code of similar instructions.
 Your task is to generate the TableGen code for the custom-defined instruction.
 Please observe the principles below:
-1. Only output TableGen code.
+1. Only output TableGen code of the custom-defined instruction.
 2. Do not include any other information or comments in the output.
 3. Pay attention to the code structure and indentation. Ensure the generated code is complete and accurate.
 The following is the description of the custom-defined instruction:

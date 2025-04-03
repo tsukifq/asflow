@@ -5,7 +5,7 @@ from typing import List
 from autogen_core import AgentId, MessageContext, RoutedAgent, SingleThreadedAgentRuntime, message_handler
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
-from logger import log_process, log_debug
+from logger import log_process, log_debug, log_result
 from prompts import pure_system_prompt, instr_formatting_prompt, files_searching_prompt, shots_searching_prompt, tablegen_generating_prompt
 
 @dataclass
@@ -249,6 +249,7 @@ class OrchestratorAgent(RoutedAgent):
                 results = await asyncio.gather(*[self.send_message(worker_task, worker_id) for worker_id in worker_ids])
                 model_result = results[0]
                 log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nReceived results from workers at layer {i}")
+                log_result(model_result.result)
 
         
         log_process(f"{'-'*80}\nOrchestrator-{self.id}:\nPerforming final aggregation")

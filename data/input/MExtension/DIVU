@@ -1,0 +1,33 @@
+DIVU - Divide Unsigned
+
+Description:
+DIVU performs unsigned integer division, dividing the value in register rs1 by the value in register rs2 and writes the quotient to register rd.
+This instruction is part of the RISC-V M Extension (Integer Multiplication and Division).
+
+Syntax:
+divu rd, rs1, rs2
+
+Operation:
+rd = rs1 / rs2 (unsigned division)
+
+Special cases:
+- If rs2 = 0, the result is 2^XLEN-1 (all bits set)
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+None (DIVU does not cause exceptions, even for division by zero)
+
+Instruction format:
+31-25  24-20  19-15  14-12  11-7   6-0
+funct7  rs2    rs1   funct3  rd    opcode
+0000001 XXXXX  XXXXX  101   XXXXX 0110011
+
+Encoding details:
+funct7 = 0000001
+funct3 = 101
+opcode = 0110011 (OP)
+
+instruction type:
+MExtension

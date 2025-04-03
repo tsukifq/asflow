@@ -1,0 +1,30 @@
+JAL - Jump and Link
+
+Description:
+JAL (Jump and Link) adds the sign-extended 20-bit immediate (multiplied by 2) to the pc and writes the address of the instruction following the jump (pc+4) to register rd.
+This instruction is part of the RISC-V Base ISA (RV32I/RV64I).
+
+Syntax:
+jal rd, offset
+
+Operation:
+rd = pc + 4
+pc = pc + sext(offset)
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+Instruction address misaligned exception (if target address is not aligned to instruction boundary)
+
+Instruction format:
+31-12                             11-7   6-0
+imm[20|10:1|11|19:12]              rd    opcode
+XXXXXXXXXXXXXXXXXXXX             XXXXX  1101111
+
+Encoding details:
+imm[20|10:1|11|19:12] = 20-bit signed immediate offset (in multiples of 2 bytes)
+opcode = 1101111 (JAL)
+
+instruction type:
+Base

@@ -1,0 +1,30 @@
+ADDI - Add Immediate
+
+Description:
+ADDI adds the sign-extended 12-bit immediate to the value in register rs1 and writes the result to register rd.
+This instruction is part of the RISC-V Base ISA (RV32I/RV64I).
+
+Syntax:
+addi rd, rs1, imm
+
+Operation:
+rd = rs1 + sext(imm)
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+None (ADDI does not cause exceptions)
+
+Instruction format:
+31-20     19-15  14-12  11-7   6-0
+imm[11:0]  rs1   funct3  rd    opcode
+XXXXXXXXXXXX  XXXXX  000   XXXXX 0010011
+
+Encoding details:
+imm[11:0] = 12-bit signed immediate value
+funct3 = 000
+opcode = 0010011 (OP-IMM)
+
+instruction type:
+Base

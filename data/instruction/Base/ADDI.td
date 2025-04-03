@@ -1,10 +1,3 @@
-
-ADDI adds the sign-extended 12-bit immediate to register rs1. Arithmetic overflow is ignored and the
-result is simply the low XLEN bits of the result. ADDI rd, rs1, 0 is used to implement the MV rd, rs1
-assembler pseudoinstruction.
-
-Here is the extracted TableGen code for the `ADDI` instruction and its inheritance hierarchy:
-
 ```tablegen
 // ------ RISCVInstrInfo.td ------ //
 let hasSideEffects = 0, mayLoad = 0, mayStore = 0 in {
@@ -97,12 +90,3 @@ class RVInstCommon<dag outs, dag ins, string opcodestr, string argstr,
   let TSFlags{22-21} = TargetOverlapConstraintType;
 }
 ```
-
-This code includes the definition of the `ADDI` instruction and its parent classes up the inheritance hierarchy, as requested. The inheritance chain is as follows:
-
-1. `ADDI` inherits from `ALU_ri`.
-2. `ALU_ri` inherits from `RVInstI`.
-3. `RVInstI` inherits from `RVInstIBase`.
-4. `RVInstIBase` inherits from `RVInst`.
-5. `RVInst` inherits from `RVInstCommon`.
-6. `RVInstCommon` inherits from `Instruction`.

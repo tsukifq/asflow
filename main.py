@@ -8,7 +8,7 @@ instruction = Instruction()
 # instruction.type = "C910"
 
 # example MUL
-instruction.name = "MUL"
+instruction.name = "DIV"
 instruction.type = "MExtension"
 
 with open("./data/input/" + instruction.type + "/" + instruction.name, "r") as f:

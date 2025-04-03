@@ -1,0 +1,34 @@
+REM - Remainder
+
+Description:
+REM computes the remainder of signed integer division, taking the value in register rs1 modulo the value in register rs2 and writes the result to register rd.
+This instruction is part of the RISC-V M Extension (Integer Multiplication and Division).
+
+Syntax:
+rem rd, rs1, rs2
+
+Operation:
+rd = rs1 % rs2 (signed remainder)
+
+Special cases:
+- If rs2 = 0, the result is rs1 (the dividend)
+- If rs1 = -2^(XLEN-1) and rs2 = -1, the result is 0 (no remainder in this overflow case)
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+None (REM does not cause exceptions, even for division by zero)
+
+Instruction format:
+31-25  24-20  19-15  14-12  11-7   6-0
+funct7  rs2    rs1   funct3  rd    opcode
+0000001 XXXXX  XXXXX  110   XXXXX 0110011
+
+Encoding details:
+funct7 = 0000001
+funct3 = 110
+opcode = 0110011 (OP)
+
+instruction type:
+MExtension

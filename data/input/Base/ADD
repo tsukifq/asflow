@@ -28,26 +28,3 @@ opcode = 0110011 (OP)
 
 instruction type:
 Base
-
-
-def ADD : RVInstR<0b0110011, 0b000, 0b0000000, "add", 
-                  (outs GPR:$rd), 
-                  (ins GPR:$rs1, GPR:$rs2),
-                  "add $rd, $rs1, $rs2"> {
-  let InstType = InstTypeBase;
-  let hasNoExceptions = 1;
-  let mayLoad = 0;
-  let mayStore = 0;
-  let isALU = 1;
-  let isAdd = 1;
-  let Privilege = PrivilegeModesAll;
-}
-
-def ADD : RVInstR<0b0000000, 0b000, OPC_OP, (outs GPR:$rd), (ins GPR:$rs1, GPR:$rs2),
-           "add\t$rd, $rs1, $rs2",
-           [(set GPR:$rd, (add GPR:$rs1, GPR:$rs2))]> {
-  let hasSideEffects = 0;
-  let mayLoad = 0;
-  let mayStore = 0;
-}
-

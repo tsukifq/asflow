@@ -1,0 +1,32 @@
+BGE - Branch if Greater or Equal
+
+Description:
+BGE compares values in registers rs1 and rs2 and takes the branch if rs1 is greater than or equal to rs2, treating the values as signed integers.
+The 12-bit B-immediate is sign-extended and multiplied by 2 to form the branch offset, which is added to the pc.
+This instruction is part of the RISC-V Base ISA (RV32I/RV64I).
+
+Syntax:
+bge rs1, rs2, offset
+
+Operation:
+if (rs1 ≥ rs2) (signed comparison)
+    pc = pc + sext(offset)
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+None (BGE does not cause exceptions)
+
+Instruction format:
+31-25      24-20  19-15  14-12  11-7       6-0
+imm[12|10:5] rs2   rs1   funct3 imm[4:1|11] opcode
+XXXXXXX     XXXXX  XXXXX  101   XXXXX      1100011
+
+Encoding details:
+imm[12|10:5|4:1|11] = 12-bit signed immediate offset (in multiples of 2 bytes)
+funct3 = 101
+opcode = 1100011 (BRANCH)
+
+instruction type:
+Base

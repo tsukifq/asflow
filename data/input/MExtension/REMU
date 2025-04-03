@@ -1,0 +1,33 @@
+REMU - Remainder Unsigned
+
+Description:
+REMU computes the remainder of unsigned integer division, taking the value in register rs1 modulo the value in register rs2 and writes the result to register rd.
+This instruction is part of the RISC-V M Extension (Integer Multiplication and Division).
+
+Syntax:
+remu rd, rs1, rs2
+
+Operation:
+rd = rs1 % rs2 (unsigned remainder)
+
+Special cases:
+- If rs2 = 0, the result is rs1 (the dividend)
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+None (REMU does not cause exceptions, even for division by zero)
+
+Instruction format:
+31-25  24-20  19-15  14-12  11-7   6-0
+funct7  rs2    rs1   funct3  rd    opcode
+0000001 XXXXX  XXXXX  111   XXXXX 0110011
+
+Encoding details:
+funct7 = 0000001
+funct3 = 111
+opcode = 0110011 (OP)
+
+instruction type:
+MExtension

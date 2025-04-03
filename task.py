@@ -45,5 +45,5 @@ class Task:
         runtime.start()
         result = await runtime.send_message(UserTask(task=self.task), AgentId("orchestrator", "default"))
         await runtime.stop_when_idle()
-        log_result(f"{'-'*80}\nFinal result:\n{result.result}")
+        # log_result(f"{'-'*80}\nFinal result:\n{result.result}")
 

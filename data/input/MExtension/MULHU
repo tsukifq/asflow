@@ -1,0 +1,30 @@
+MULHU - Multiply High Unsigned
+
+Description:
+MULHU multiplies the values in registers rs1 and rs2 and writes the upper XLEN bits of the product to register rd.
+This instruction treats rs1 and rs2 as unsigned values and is part of the RISC-V M Extension (Integer Multiplication and Division).
+
+Syntax:
+mulhu rd, rs1, rs2
+
+Operation:
+rd = (rs1 * rs2)[2*XLEN-1:XLEN]
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+None (MULHU does not cause exceptions)
+
+Instruction format:
+31-25  24-20  19-15  14-12  11-7   6-0
+funct7  rs2    rs1   funct3  rd    opcode
+0000001 XXXXX  XXXXX  011   XXXXX 0110011
+
+Encoding details:
+funct7 = 0000001
+funct3 = 011
+opcode = 0110011 (OP)
+
+instruction type:
+MExtension
