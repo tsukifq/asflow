@@ -1,0 +1,28 @@
+LDD——双寄存器加载指令
+语法：
+ldd rd1,rd2, (rs1),imm2, 4
+操作：
+address←rs1 + zero_extend(imm2<<4)
+rd1←mem[address+7:address]
+rd2←mem[address+15:address+8]
+执行权限：
+M mode/S mode/U mode
+异常：
+加载指令非对齐访问异常、加载指令访问错误异常、加载指令页面错误异常、非法指令异常
+说明：
+rd1,rd2 ,rs1 互相不可相等
+指令格式：
+
+31-27 bits: 11111
+
+26-25 bits: imm2
+
+24-20 bits: rd2
+
+19-15 bits: rs1
+
+14-12 bits: 100
+
+11-7 bits: rd1
+
+6-0 bits: 0001011

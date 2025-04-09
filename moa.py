@@ -135,8 +135,24 @@ class WorkerAgent(RoutedAgent):
         log_debug(f"Shots prompt: {user_prompt}")
         model_result = await self._model_client.create([SystemMessage(content=system_prompt), UserMessage(content=user_prompt, source="user")])
         assert isinstance(model_result.content, str)
-        log_process(f"{'-'*80}\nWorker-{self.id} (Shots Results):\n{model_result.content}")
-        similar_instructions = model_result.content
+
+        # Check if required reference files are in the results, if not, add them
+        results = model_result.content
+        # required_shots = ["ADD.td", "SUBW.td", "AND.td"]
+        
+        # for shot in required_shots:
+        #     has_shot = False
+        #     for line in results.strip().split('\n'):
+        #         if shot in line:
+        #             has_shot = True
+        #             break
+            
+        #     if not has_shot:
+        #         log_debug(f"{shot} not found in results, adding it")
+        #         results += f"\n{shot}"
+        
+        # log_process(f"{'-'*80}\nWorker-{self.id} (Shots Results):\n{results}")
+        similar_instructions = results
         return similar_instructions
     
     # Generate the tablegen snippet according to the few-shot examples.

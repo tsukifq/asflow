@@ -177,7 +177,8 @@ This is the description of target instruction:
 
 shots_searching_prompt = """
 You are provided with a set of file names. These files contain the implementation of RISC-V instructions and their related classes in the LLVM RISC-V TableGen code.
-Your task is to choose 3 files that containe the implementation of instructions that are similar to the target instruction.
+Your task is to choose 3 files from the names provided.
+The files you choose should contain implementation of instructions that are similar to the target instruction.
 Please observe the principles below:
 1. Only output the names of the relevant files.
 2. Do not include any other information or comments in the output.

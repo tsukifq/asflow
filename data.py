@@ -8,16 +8,16 @@ from prompts import tablegen_extraction_prompt
 class Data:
     def __init__(self):
         self.client = Client()
-        # self.model_client = self.client.model_client_v3
-        self.model_client = self.client.model_client
+        self.model_client = self.client.model_client_v3
+        # self.model_client = self.client.model_client
 
     # invoke the model to collect data and extract instruction implementation data from LLVM RISCV TableGen code
     async def collect_data(self, instr: Instruction):
         # Retrieve LLVM RISCV TableGen files.
-        td_files = ["RISCV.td", "RISCVFeatures.td", "RISCVInstrFormats.td", "RISCVInstrInfo.td"]
+        td_files = ["RISCV.td", "RISCVFeatures.td", "RISCVInstrFormats.td", "RISCVInstrInfoV.td", "RISCVInstrFormatsV.td"]
         file_content = ""
         for filename in td_files:
-            full_path = f"../llvm-project/llvm/lib/Target/RISCV/{filename}"
+            full_path = f"../llvm-project/llvm/lib/Target/RISCV/tmp/{filename}"
             result = subprocess.run(["cat", full_path], capture_output=True, text=True)
             if result.returncode == 0:
                 file_content += f"--- Contents of {filename} ---\n" + result.stdout + "\n"
@@ -33,13 +33,11 @@ class Data:
         )
         return response
 
-    
+
 data = Data()
 instr = Instruction()
-instr.name = "SW"
+instr.name = "VSUB_VX"
 instr.description = """
-The SD, SW, SH, and SB instructions store 64-bit, 32-bit, 16-bit, and 8-bit values from the low
-bits of register rs2 to memory respectively.
 """
 response = asyncio.run(data.collect_data(instr))
 with open("./data/instruction/" + instr.name + ".td", "w") as f:

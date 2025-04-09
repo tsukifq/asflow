@@ -1,0 +1,38 @@
+VSETIVLI - Set Vector Length Immediate with Fixed rs1=x0
+Description:
+VSETIVLI configures the vector unit by setting the vector length based on the immediate value and updates the vl and vtype CSRs. It's a variant of VSETVLI with an implicit rs1=x0, meaning it always sets the vector length to the maximum possible for the given configuration. This instruction is part of the RISC-V Vector Extension (RVV).
+
+Syntax:
+vsetivli rd, uimm, vtypei
+
+Operation:
+vtype = encode(vtypei)
+vl = minimum(uimm, VLMAX(vtype))
+rd = vl
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+Illegal instruction exception (if the vector extension is not implemented or the configuration is invalid)
+
+Instruction format:
+31-30  29-25  24-20  19-15  14-12  11-7   6-0
+ 1 1  zimm[10:6] uimm[4:0]  uimm   1 1 1   rd   1010111
+ 
+Encoding details:
+rd = destination register for the new vector length (or x0 to not write the result)
+
+uimm = 5-bit unsigned immediate value specifying the requested vector length
+
+zimm = the immediate value that encodes vtype settings:
+
+vsew[2:0] (bits 5:3): Element width (SEW = 8×2^vsew bits)
+vlmul[1:0] (bits 2:1): Vector register group multiplier (LMUL = 2^vlmul)
+vma (bit 0): Vector mask agnostic
+vta (bit 7): Vector tail agnostic
+reserved (bits 10:8): Must be zero
+opcode = 1010111 (VECTOR)
+
+Instruction type:
+Vector extension

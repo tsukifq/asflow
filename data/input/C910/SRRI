@@ -1,0 +1,23 @@
+SRRI——循环右移指令
+语法：
+srri rd, rs1, imm6
+操作：
+rd ← rs1 >>>> imm6
+rs1 原值右移，左侧移入右侧移出位
+执行权限：
+M mode/S mode/U mode
+异常：
+非法指令异常
+指令格式：
+
+31-26 bits: 000100
+
+25-20 bits: imm6
+
+19-15 bits: rs1
+
+14-12 bits: 001
+
+11-7 bits: rd
+
+6-0 bits: 0001011

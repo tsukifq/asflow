@@ -1,0 +1,19 @@
+MULAW——低32 位乘累加指令
+语法：
+mulaw rd, rs1, rs2
+操作：
+tmp[31:0] ← rd[31:0]+ (rs1[31:0] * rs[31:0])[31:0]
+rd ←sign_extend(tmp[31:0])
+执行权限：
+M mode/S mode/U mode
+异常：
+非法指令异常
+指令格式：
+
+31-27 bits: 00100
+26-25 bits: 10
+24-20 bits: rs2
+19-15 bits: rs1
+14-12 bits: 001
+11-7 bits:  rd
+6-0 bits:   0001011

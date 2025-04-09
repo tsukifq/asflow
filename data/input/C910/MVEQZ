@@ -1,0 +1,26 @@
+MVEQZ——寄存器为0 传送指令
+语法：
+mveqz rd, rs1, rs2
+操作： if (rs2 == 0)
+rd ← rs1
+else
+rd ← rd
+执行权限：
+M mode/S mode/U mode
+异常：
+非法指令异常
+指令格式：
+
+31-27 bits: 01000
+
+26-25 bits: 00
+
+24-20 bits: rs2
+
+19-15 bits: rs1
+
+14-12 bits: 001
+
+11-7 bits: rd
+
+6-0 bits: 0001011

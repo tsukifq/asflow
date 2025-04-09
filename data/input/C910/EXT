@@ -1,0 +1,24 @@
+EXT——寄存器连续位提取符号位扩展指令
+语法：
+ext rd, rs1, imm1,imm2
+操作：
+rd←sign_extend(rs1[imm1:imm2])
+执行权限：
+M mode/S mode/U mode
+异常：
+非法指令异常
+说明：
+若imm1<imm2，该指令行为不可预测
+指令格式：
+
+31-26 bits: imm1
+
+25-20 bits: imm2
+
+19-15 bits: rs1
+
+14-12 bits: 010
+
+11-7 bits: rd
+
+6-0 bits: 0001011

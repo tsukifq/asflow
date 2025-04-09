@@ -1,0 +1,20 @@
+FLRD——浮点寄存器移位双字加载指令
+语法：
+flrd rd, rs1, rs2, imm2
+操作：
+rd ←mem[(rs1+rs2<<imm2)+7: (rs1+rs2<<imm2)]
+执行权限：
+M mode/S mode/U mode
+异常：
+加载指令非对齐访问异常、加载指令访问错误异常、加载指令页面错误异常, 非法指令异常
+说明：
+mxstatus.theadisaee=1’b0 或mstatus.fs =2’b00 时，该指令产生非法指令异常
+指令格式：
+
+31-27 bits: 01100
+26-25 bits: imm2
+24-20 bits: rs2
+19-15 bits: rs1
+14-12 bits: 110
+11-7 bits:  rd
+6-0 bits:   0001011

@@ -520,4 +520,4 @@ def VSETVLI : RVInstV<0b1010111, (outs GPR:$rd), (ins GPR:$rs1, uimm11:$vtypei),
    - Modifies CSRs (vl and vtype) via `hasSideEffects`
    - Generates Illegal Instruction exception for invalid configurations
 
-**Note:** There's a potential encoding discrepancy in the zimm field - the original specification appears to have a gap at `vtypei[5]`. This implementation follows the described format, but real-world use would require verification against actual RISC-V Vector Extension specifications.
+**Note:** There's a potential encoding discrepancy in the zimm field - the original specification appears to have a gap at `vtypei[5]`. This implementation follows the described format, but real-world use would require verification against actual RISC-V Vector Extension specifications.## Content

@@ -3,13 +3,13 @@ from instr import Instruction
 import asyncio
 
 instruction = Instruction()
-# # example MULA
-# instruction.name = "MULA"
-# instruction.type = "C910"
+# example MULA
+instruction.name = "MULA"
+instruction.type = "C910"
 
-# example MUL
-instruction.name = "DIV"
-instruction.type = "MExtension"
+# # example MUL
+# instruction.name = "VADD_VX"
+# instruction.type = "VExtension"
 
 with open("./data/input/" + instruction.type + "/" + instruction.name, "r") as f:
     instruction.description = f.read()

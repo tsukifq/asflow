@@ -1,0 +1,39 @@
+VSETVL - Set Vector Length
+Description:
+VSETVL configures the vector unit by setting the vector length based on register values and updates the vl and vtype CSRs. Unlike VSETVLI, it reads the vtype configuration from a register rather than an immediate. This instruction is part of the RISC-V Vector Extension (RVV).
+
+Syntax:
+vsetvl rd, rs1, rs2
+
+Operation:
+vtype = rs2
+vl = minimum(rs1, VLMAX(vtype))
+rd = vl
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+Illegal instruction exception (if the vector extension is not implemented or the configuration is invalid)
+
+Instruction format:
+31-25  24-20  19-15  14-12  11-7   6-0
+1000000  rs2    rs1   1 1 1   rd   1010111
+
+Encoding details:
+rs1 = source register containing the requested vector length (or x0 to use the maximum possible vector length)
+
+rs2 = source register containing the vtype value
+
+rd = destination register for the new vector length (or x0 to not write the result)
+
+rs2 encodes vtype settings:
+
+vsew[2:0]: Element width (SEW = 8×2^vsew bits)
+vlmul[2:0]: Vector register group multiplier
+vma: Vector mask agnostic
+vta: Vector tail agnostic
+opcode = 1010111 (VECTOR)
+
+Instruction type:
+Vector extension

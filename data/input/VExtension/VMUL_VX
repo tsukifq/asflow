@@ -1,0 +1,35 @@
+VMUL.VX - Vector-Scalar Multiplication
+Description:
+VMUL.VX performs element-wise multiplication of a vector register (vs2) and a scalar value from an x-register (rs1) and writes the results to a destination vector register (vd). This instruction is part of the RISC-V Vector Extension (RVV).
+
+Syntax:
+vmul.vx vd, vs2, rs1 [, vm]
+
+Operation:
+for i = 0 to vl-1:
+  if vm[i] == 1 or vm omitted:
+    vd[i] = vs2[i] * rs1
+  else:
+    vd[i] unchanged
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+Illegal instruction exception (if the vector extension is not implemented)
+
+Instruction format:
+31-26  25  24-20  19-15  14-12  11-7   6-0
+100101  vm   vs2    rs1    100    vd   1010111
+
+Encoding details:
+vd = destination vector register
+vs2 = source vector register
+rs1 = source scalar x-register
+vm = vector mask (v0.t when vm=0, unmasked when vm=1)
+opcode = 1010111 (VECTOR)
+funct3 = 100 (OPIVX)
+funct6 = 100101 (VMUL)
+
+Instruction type:
+Vector arithmetic instruction

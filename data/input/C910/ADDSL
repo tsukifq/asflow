@@ -1,0 +1,24 @@
+ADDSL——寄存器移位相加指令
+语法：
+addsl rd rs1, rs2, imm2
+操作：
+rd ← rs1+ rs2<<imm2
+执行权限：
+M mode/S mode/U mode
+异常：
+非法指令异常
+指令格式：
+
+31-27bits: 00000
+
+26-25bits: imm2
+
+24-20bits: rs2
+
+19-25bits: rs1
+
+14-12bits: 001
+
+11-7bits: rd
+
+6-0bits: 0001011

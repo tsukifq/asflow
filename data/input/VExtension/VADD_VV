@@ -1,0 +1,35 @@
+VADD.VV - Vector-Vector Addition
+Description:
+VADD.VV performs element-wise addition of two vector registers (vs2 and vs1) and writes the results to a destination vector register (vd). This instruction is part of the RISC-V Vector Extension (RVV).
+
+Syntax:
+vadd.vv vd, vs2, vs1 [, vm]
+
+Operation:
+for i = 0 to vl-1:
+  if vm[i] == 1 or vm omitted:
+    vd[i] = vs2[i] + vs1[i]
+  else:
+    vd[i] unchanged
+
+Execution privilege:
+Machine mode, Supervisor mode, User mode
+
+Exceptions:
+Illegal instruction exception (if the vector extension is not implemented)
+
+Instruction format:
+31-26  25  24-20  19-15  14-12  11-7   6-0
+000000  vm   vs2    vs1    000    vd   1010111
+
+Encoding details:
+vd = destination vector register
+vs2 = source vector register 2
+vs1 = source vector register 1
+vm = vector mask (v0.t when vm=0, unmasked when vm=1)
+opcode = 1010111 (VECTOR)
+funct3 = 000 (OPIVV)
+funct6 = 000000 (VADD)
+
+Instruction type:
+Vector arithmetic instruction
